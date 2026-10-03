@@ -29,6 +29,7 @@
     }
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html, body { margin: 0; height: 100%; }
   body {
     background: var(--paper);
@@ -183,6 +184,33 @@
   .arrow:hover:not(:disabled) { background: var(--green-deep); color: var(--paper); }
   .arrow:disabled { opacity: .3; cursor: default; }
   .arrow.turn { background: var(--green-deep); color: var(--paper); }
+  /* al terminar: píldora para volver a la portada, en el lugar de la flecha */
+  .restart {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 44px;
+    padding: 0 20px 0 16px;
+    border: 2px solid var(--green-deep);
+    border-radius: 999px;
+    background: var(--green-deep);
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background .2s, color .2s, transform .2s;
+    animation: restart-in .5s cubic-bezier(.2, .8, .2, 1) both;
+  }
+  .restart svg { width: 18px; height: 18px; flex: none; transition: transform .4s; }
+  .restart:hover { background: var(--paper); color: var(--green-deep); }
+  .restart:hover svg { transform: rotate(-90deg); }
+  .restart:focus-visible { outline: 2px solid var(--green-deep); outline-offset: 3px; }
+  @keyframes restart-in { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .restart, .restart svg { animation: none; transition: none; } }
   .arrow:focus-visible, .dots button:focus-visible { outline: 2px solid var(--green-deep); outline-offset: 3px; }
   .dots { display: flex; gap: 8px; }
   .count { display: none; font-family: var(--mono); font-size: 14px; color: var(--green-deep); min-width: 7ch; text-align: center; }
@@ -228,6 +256,7 @@
     <div class="dots" id="dots"></div>
     <div class="count" id="count" aria-live="polite"></div>
     <button class="arrow" id="next" aria-label="Página siguiente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button class="restart" id="restart" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7M4 4v5h5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Volver al inicio</button>
   </div>
   <div class="hint">usa las flechas o toca la hoja · en la página 8 la tira se da vuelta</div>
 </footer>
@@ -264,6 +293,8 @@
   const prev = document.getElementById("prev");
   const next = document.getElementById("next");
   const count = document.getElementById("count");
+  const restart = document.getElementById("restart");
+  restart.addEventListener("click", () => go(0));
   const svg = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const ICON_NEXT = svg("M5 12h14M13 6l6 6-6 6");
   const ICON_PREV = svg("M19 12H5M11 6l-6 6 6 6");
@@ -410,7 +441,10 @@
     const ix = open.map(n => n + 1);
     count.textContent = `${ix.length > 1 ? ix[0] + "–" + ix[1] : ix[0]} / ${pages.length}`;
     prev.disabled = current === 0;
-    next.disabled = current === units.length - 1;
+    const end = current === units.length - 1;
+    next.disabled = end;
+    next.hidden = end;
+    restart.hidden = !end;
     const turns = current + 1 < units.length && sideOf(units[current + 1].idx[0]) !== sideOf(open[0]);
     next.setAttribute("aria-label", turns ? "Dar la vuelta a la tira" : "Página siguiente");
     next.innerHTML = turns ? ICON_TURN : ICON_NEXT;
@@ -521,6 +555,7 @@
   addEventListener("keydown", e => {
     if (e.key === "ArrowRight") step(1);
     if (e.key === "ArrowLeft") step(-1);
+    if (e.key === "Home") go(0);
   });
   addEventListener("resize", () => {
     if (!units.length || flipping || !measure()) return;
