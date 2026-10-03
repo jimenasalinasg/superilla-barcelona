@@ -2,7 +2,7 @@ const { chromium } = require('playwright-core');
 const { spawn } = require('child_process');
 (async()=>{
  const FPS = 30;
- const b = await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
+ const b = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
  const p = await b.newPage({viewport:{width:432,height:768}, deviceScaleFactor:2.5});
  const errs=[]; p.on('pageerror',e=>errs.push(e.message));
  await p.clock.install({time:0});

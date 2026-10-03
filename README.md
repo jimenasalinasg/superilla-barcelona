@@ -21,6 +21,7 @@ Necesita Node, `playwright-core`, Chromium y `ffmpeg`. Desde la raíz del repo:
 ```
 python3 -m http.server 8000      # en una terminal
 npm install playwright-core      # una vez
+npx playwright install chromium  # una vez
 node reel/grabar.js              # genera reel/superilla-reel.mp4
 ```
 
