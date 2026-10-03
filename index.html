@@ -134,9 +134,10 @@
   .floor {
     position: absolute;
     left: 0;
-    height: 34px;
-    background: radial-gradient(ellipse at center, rgba(0,0,0,.28), rgba(0,0,0,0) 70%);
-    filter: blur(6px);
+    height: 18px;
+    /* sombra de contacto suave, apenas debajo del papel */
+    background: radial-gradient(closest-side, rgba(0,0,0,.16), rgba(0,0,0,0));
+    filter: blur(4px);
     pointer-events: none;
   }
   .panel img { transition: filter .25s; }
@@ -311,9 +312,9 @@
       const f = p.a / ALPHA;
       p.shade.style.opacity = ((r.phi > 0 ? .34 : .1) * f).toFixed(3);
     });
-    floor.style.transform = `translateX(${x0 + total * .03}px)`;
-    floor.style.width = total * .94 + "px";
-    floor.style.top = top + ph - 10 + "px";
+    floor.style.transform = `translateX(${x0 + total * .08}px)`;
+    floor.style.width = total * .84 + "px";
+    floor.style.top = top + ph - 4 + "px";
   }
 
   function frame() {
