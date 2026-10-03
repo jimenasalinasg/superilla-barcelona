@@ -592,16 +592,22 @@
   // Cada paso: [página (1-16), ms que se queda]. Las páginas con más texto, más tiempo.
   const SHORT = new URLSearchParams(location.search).has("corto");
   const LONG = [[1,2600],[2,3200],[3,2200],[4,2200],[5,3600],[6,3600],[7,3400],[8,2400],[9,5600],[10,3200],[11,3400],[12,3200],[13,3400],[14,2600],[15,2800],[16,2400]];
-  const CUT = [[1,1800],[4,1800],[5,2800],[6,2600],[8,1800],[9,4100],[11,2600],[12,2600],[15,2400],[16,1800]];
+  const CUT = [[1,2300],[4,1800],[5,2800],[6,2600],[8,1800],[9,4100],[11,2600],[12,2600],[15,2400],[16,1800]];
   const STEPS = SHORT ? CUT : LONG;
   const fade = (el, from, to, dur) => tween(dur, e => { el.style.opacity = from + (to - from) * e; });
   window.__runReel = async () => {
     const wait = ms => new Promise(r => setTimeout(r, ms));
     const intro = document.getElementById("intro"), outro = document.getElementById("outro");
-    await wait(SHORT ? 1200 : 1700);
-    await fade(intro, 1, 0, SHORT ? 400 : 500);
-    intro.remove();
-    const unfold = SHORT ? 800 : 900;
+    if (SHORT) {
+      // versión corta: arranca en movimiento (el título queda para el cierre)
+      intro.remove();
+      await wait(150);
+    } else {
+      await wait(1700);
+      await fade(intro, 1, 0, 500);
+      intro.remove();
+    }
+    const unfold = SHORT ? 1100 : 900;
     await fold(units[current].idx, pwTo, unfold);
     for (let k = 0; k < STEPS.length; k++) {
       await wait(STEPS[k][1] - (k === 0 ? unfold : 0));
