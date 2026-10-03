@@ -588,24 +588,29 @@
   <span class="url">jimenasalinasg.github.io/superilla-barcelona</span>
 </div>
 <script>
-  // Guion del reel: cuánto se queda cada página (ms). Las páginas con más texto, más tiempo.
-  const DWELL = [2600, 3200, 2200, 2200, 3600, 3600, 3400, 2400, 5600, 3200, 3400, 3200, 3400, 2600, 2800, 2400];
+  // Guion del reel. Versión larga: todas las páginas. Versión corta (?corto): ~30 s con los momentos clave.
+  // Cada paso: [página (1-16), ms que se queda]. Las páginas con más texto, más tiempo.
+  const SHORT = new URLSearchParams(location.search).has("corto");
+  const LONG = [[1,2600],[2,3200],[3,2200],[4,2200],[5,3600],[6,3600],[7,3400],[8,2400],[9,5600],[10,3200],[11,3400],[12,3200],[13,3400],[14,2600],[15,2800],[16,2400]];
+  const CUT = [[1,1800],[4,1800],[5,2800],[6,2600],[8,1800],[9,4100],[11,2600],[12,2600],[15,2400],[16,1800]];
+  const STEPS = SHORT ? CUT : LONG;
   const fade = (el, from, to, dur) => tween(dur, e => { el.style.opacity = from + (to - from) * e; });
   window.__runReel = async () => {
     const wait = ms => new Promise(r => setTimeout(r, ms));
     const intro = document.getElementById("intro"), outro = document.getElementById("outro");
-    await wait(1700);
-    await fade(intro, 1, 0, 500);
+    await wait(SHORT ? 1200 : 1700);
+    await fade(intro, 1, 0, SHORT ? 400 : 500);
     intro.remove();
-    await fold(units[current].idx, pwTo, 900);
-    for (let p = 0; p < pages.length; p++) {
-      await wait(DWELL[p] - (p === 0 ? 900 : 0));
-      if (p < pages.length - 1) go(unitOf[p + 1]);
+    const unfold = SHORT ? 800 : 900;
+    await fold(units[current].idx, pwTo, unfold);
+    for (let k = 0; k < STEPS.length; k++) {
+      await wait(STEPS[k][1] - (k === 0 ? unfold : 0));
+      if (k < STEPS.length - 1) go(unitOf[STEPS[k + 1][0] - 1]);
     }
-    await fold([], pw, 700);
+    await fold([], pw, SHORT ? 600 : 700);
     await wait(200);
-    await fade(outro, 0, 1, 600);
-    await wait(2800);
+    await fade(outro, 0, 1, SHORT ? 500 : 600);
+    await wait(SHORT ? 2200 : 2800);
     window.__done = true;
   };
 </script>

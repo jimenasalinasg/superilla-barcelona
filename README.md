@@ -22,7 +22,8 @@ Necesita Node, `playwright-core`, Chromium y `ffmpeg`. Desde la raíz del repo:
 python3 -m http.server 8000      # en una terminal
 npm install playwright-core      # una vez
 npx playwright install chromium  # una vez
-node reel/grabar.js              # genera reel/superilla-reel.mp4
+node reel/grabar.js              # versión completa → reel/superilla-reel.mp4
+node reel/grabar.js corto        # versión de ~30 s → reel/superilla-reel-30s.mp4
 ```
 
 Los tiempos de cada página están en `DWELL`, dentro de `reel/index.html`.
