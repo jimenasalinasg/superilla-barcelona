@@ -131,6 +131,23 @@
     pointer-events: none;
     background: linear-gradient(90deg, rgba(0,0,0,.16), rgba(0,0,0,0) 4%, rgba(0,0,0,0) 96%, rgba(0,0,0,.06));
   }
+  .flipcard {
+    position: absolute;
+    left: 0; top: 0;
+    transform-style: preserve-3d;
+    transform-origin: 50% 50%;
+    pointer-events: none;
+  }
+  .flipcard .face {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    box-shadow: 0 10px 24px -14px rgba(0,0,0,.35);
+  }
+  .flipcard .back { transform: rotateY(180deg); }
   .floor {
     position: absolute;
     left: 0;
@@ -178,6 +195,7 @@
   }
   .dots button:hover { transform: scale(1.25); }
   .dots button.on { background: var(--green-deep); }
+  .dots button.back-start { margin-left: 10px; }   /* separa frente y dorso */
   .hint { font-size: 20px; opacity: .7; }
 
   footer { justify-content: space-between; align-items: center; padding-bottom: 24px; }
@@ -210,7 +228,7 @@
     <div class="count" id="count" aria-live="polite"></div>
     <button class="arrow" id="next" aria-label="Página siguiente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </div>
-  <div class="hint">toca una hoja o usa las flechas para desplegarla</div>
+  <div class="hint">toca una hoja o usa las flechas · después de la página 8, la tira se da vuelta</div>
 </footer>
 
 <script>
@@ -222,8 +240,8 @@
     { src: "img/p5.jpg", alt: "Un hombre en bicicleta. Texto: «Migré a Barcelona en setiembre 2022. Nuestro primer (y hasta ahora único) piso quedaba en Consell de Cent, en una planta baja. Antes era una lavandería y luego un bar. La dueña dice que de niña vivió ahí.»", spread: "b" },
     { src: "img/p6.jpg", alt: "Una mini excavadora amarilla con un obrero de chaleco verde avanza sobre un montón de tierra, entre vallas y un cono naranja, frente a edificios amarillos. Texto: «En ese entonces, me sentía dividida entre dos realidades. Lima, que se despertaba seis horas después de mí… Y Barcelona que me recibía con obras y ruido.»", spread: "c" },
     { src: "img/p7.jpg", alt: "Un auto pequeño dibujado a lápiz, cortado por el borde derecho. Texto: «Las remodelaciones comenzaron la semana después de ingresar al piso. La Superilla de Consell de Cent era una visión de una ciudad más verde, inclusiva y peatonal. Sabíamos que tardaría hasta ver el resultado final.»", spread: "c" },
-    { src: "img/p8.jpg", alt: "Una plaza con árboles frondosos, bancos de madera y papeleras. Una pareja camina de espaldas, una mujer mayor con un carrito y un hombre descansan en los bancos.", spread: "d" },
-    { src: "img/p9.jpg", alt: "Una niña camina en equilibrio sobre troncos cortados. Texto: «Cuando conocí sobre el proyecto de la Superilla sentí que era cómo la naturaleza intentaba resistirse al concreto de la ciudad. Su aspecto rústico, los árboles sinuosos, algunos pequeños, otros más grandes, la mobiliaria de madera.»", spread: "d" },
+    { src: "img/p8.jpg", alt: "Una plaza con árboles frondosos, bancos de madera y papeleras. Una pareja camina de espaldas, una mujer mayor con un carrito y un hombre descansan en los bancos." },
+    { src: "img/p9.jpg", alt: "Una niña camina en equilibrio sobre troncos cortados. Texto: «Cuando conocí sobre el proyecto de la Superilla sentí que era cómo la naturaleza intentaba resistirse al concreto de la ciudad. Su aspecto rústico, los árboles sinuosos, algunos pequeños, otros más grandes, la mobiliaria de madera.»" },
     { src: "img/p10.jpg", alt: "Macetas pequeñas con plantas y un árbol joven atado a tutores. Texto: «Los árboles los trajeron en diminutas macetas. “Vi cómo venían a robárselas antes de haberlas instalado”, me dijo una señora con quien pude conversar.»", spread: "e" },
     { src: "img/p11.jpg", alt: "Unos pies con pantalón verde y zapatos marrones caminan sobre losetas hexagonales con la flor de Barcelona. Texto: «También las locetas dieron mucho de qué hablar. “Yo tengo una loceta antigua en mi sala. Me la llevé durante la remodelación. Es como un trofeo.”»", spread: "e" },
     { src: "img/p12.jpg", alt: "Recorte de periódico dibujado. Quejas vecinales: «Clamor de vecinos y tiendas de Consell de Cent por la sentencia contra la Superilla: “No más obras”». Un hombre sentado en un banco y dos personas con un perro caminan por la calle arbolada.", spread: "f" },
@@ -233,15 +251,21 @@
     { src: "img/p16.jpg", alt: "Contraportada: una paloma en pleno vuelo dentro de un círculo de luz sobre fondo verde." },
   ];
   const RATIO = 1414 / 2000;
-  const FOLD_DESKTOP = 0.1, FOLD_MOBILE = 0.2;
+  const FOLD_DESKTOP = 0.1, FOLD_MOBILE = 0.2;   // ancho de un panel plegado respecto a uno abierto (cos del ángulo)
   let FOLD = FOLD_DESKTOP, ALPHA = Math.acos(FOLD);
-                 // ancho de un panel plegado respecto a uno abierto (cos del ángulo)
-  const DURATION = 750;
+  const DURATION = 750, FLIP = 1000;
+  const SIDE = 8;                                  // la tira tiene 8 paneles impresos por los dos lados
+  const sideOf = i => (i < SIDE ? 0 : 1);
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // En pantalla ancha cada doble página se abre junta; la portada y la contraportada van solas.
-  // En móvil se abre una página a la vez, para que se pueda leer.
-  let units = [], unitOf = [], mobile = false;
+  const acc = document.getElementById("acc");
+  const dots = document.getElementById("dots");
+  const prev = document.getElementById("prev");
+  const next = document.getElementById("next");
+  const count = document.getElementById("count");
+
+  // En pantalla ancha cada doble página se abre junta; en móvil, una página a la vez.
+  let units = [], unitOf = [], mobile = false, current = 0;
   function buildUnits() {
     units = [];
     pages.forEach((p, i) => {
@@ -255,16 +279,11 @@
       const d = document.createElement("button");
       const ix = u.idx.map(n => n + 1);
       d.setAttribute("aria-label", `Ir a ${ix.length > 1 ? "páginas " + ix.join(" y ") : "página " + ix[0]}`);
+      if (i > 0 && sideOf(u.idx[0]) !== sideOf(units[i - 1].idx[0])) d.className = "back-start";
       d.addEventListener("click", () => go(i));
       dots.appendChild(d);
     });
-    }
-
-  const acc = document.getElementById("acc");
-  const dots = document.getElementById("dots");
-  const prev = document.getElementById("prev");
-  const next = document.getElementById("next");
-  let current = 0;
+  }
 
   const panels = pages.map((p, i) => {
     const el = document.createElement("button");
@@ -276,90 +295,177 @@
     acc.appendChild(el);
     return { el, shade: el.lastElementChild, a: ALPHA, from: ALPHA, to: ALPHA };
   });
+  // Al cambiar de cara, la tira se cierra sobre el panel 8/9 y ese panel se da vuelta.
+  const card = document.createElement("div");
+  card.className = "flipcard";
+  card.hidden = true;
+  card.innerHTML = `<img class="face" alt="" draggable="false"><img class="face back" alt="" draggable="false">`;
+  acc.appendChild(card);
   const floor = document.createElement("div");
   floor.className = "floor";
   acc.appendChild(floor);
 
-  let safety = 0;
-  let pw = 300, pwFrom = 300, pwTo = 300, boxH = 400, avail = 600, raf = 0, t0 = 0;
+  let side = 0, anchor = [0];                      // cara visible y páginas que se centran
+  let pw = 300, pwTo = 300, boxH = 400, avail = 600;
   const ease = t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const onSide = s => panels.slice(s * SIDE, s * SIDE + SIDE);
 
-  // Posiciona cada panel: giro alrededor de su bisagra izquierda, zigzag alternado.
-  function draw() {
-    const open = units[current].idx;
+  function showSide(s) {
+    side = s;
+    panels.forEach((p, i) => { p.el.hidden = sideOf(i) !== s; });
+  }
+
+  // Posiciona los paneles de la cara visible: giro alrededor de la bisagra izquierda, zigzag alternado.
+  function layout() {
+    const list = onSide(side), base = side * SIDE;
     let x = 0, z = 0, zOpen = 0;
-    const pos = panels.map((p, i) => {
-      const phi = (i % 2 === 0 ? 1 : -1) * p.a;
+    const pos = list.map((p, k) => {
+      const phi = (k % 2 === 0 ? 1 : -1) * p.a;
       const r = { x, z, phi };
-      if (i === open[0]) zOpen = z;
+      if (base + k === anchor[0]) zOpen = z;
       x += pw * Math.cos(phi);
       z -= pw * Math.sin(phi);
       return r;
     });
     const total = x;
+    const a0 = Math.max(0, anchor[0] - base);
     const x0 = mobile
-      ? avail / 2 - (pos[open[0]].x + (pw * open.length) / 2)   // centrada en la página abierta; el resto se sale
+      ? avail / 2 - (pos[a0].x + (pw * anchor.length) / 2)   // centrada en la página abierta; el resto se sale
       : (avail - total) / 2;
     // la hoja siempre centrada en una caja de alto fijo: los controles no se mueven
     const ph = pw / RATIO, top = (boxH - ph) / 2;
-    panels.forEach((p, i) => {
-      const r = pos[i];
+    return { list, pos, total, x0, zOpen, ph, top };
+  }
+  function draw() {
+    const { list, pos, total, x0, zOpen, ph, top } = layout();
+    list.forEach((p, k) => {
+      const r = pos[k];
       p.el.style.width = pw + "px";
       p.el.style.height = ph + "px";
       p.el.style.top = top + "px";
       p.el.style.transform = `translate3d(${(x0 + r.x).toFixed(2)}px,0,${(r.z - zOpen).toFixed(2)}px) rotateY(${(r.phi * 180 / Math.PI).toFixed(3)}deg)`;
       // las caras inclinadas hacia un lado reciben menos luz
-      const f = p.a / ALPHA;
-      p.shade.style.opacity = ((r.phi > 0 ? .18 : .05) * f).toFixed(3);
+      p.shade.style.opacity = ((r.phi > 0 ? .18 : .05) * (p.a / ALPHA)).toFixed(3);
     });
     floor.style.transform = `translateX(${x0 + total * .08}px)`;
     floor.style.width = total * .84 + "px";
     floor.style.top = top + ph - 4 + "px";
   }
 
-  function frame() {
-    const t = Math.max(0, Math.min(1, (performance.now() - t0) / DURATION));
-    const e = ease(t);
-    panels.forEach(p => { p.a = p.from + (p.to - p.from) * e; });
-    pw = pwFrom + (pwTo - pwFrom) * e;   // el tamaño de la hoja también cambia suave
-    draw();
-    if (t < 1) raf = requestAnimationFrame(frame);
-    else { clearTimeout(safety); finish(); }
+  // Interpola de 0 a 1; si el navegador pausa la animación, igual llega al final.
+  let tweenId = 0, raf = 0;
+  function tween(dur, step) {
+    const my = ++tweenId;
+    cancelAnimationFrame(raf);
+    if (reduced || document.hidden) { step(1); return Promise.resolve(); }
+    return new Promise(resolve => {
+      const t0 = performance.now();
+      let done = false;
+      const end = () => {
+        if (done) return;
+        done = true;
+        if (my === tweenId) { cancelAnimationFrame(raf); raf = 0; step(1); }
+        resolve();
+      };
+      const f = () => {
+        if (my !== tweenId) return end();
+        const t = Math.max(0, Math.min(1, (performance.now() - t0) / dur));
+        step(ease(t));
+        if (t < 1) raf = requestAnimationFrame(f); else end();
+      };
+      raf = requestAnimationFrame(f);
+      setTimeout(end, dur + 250);
+    });
   }
 
-  function setTargets(animate) {
-    const open = units[current].idx;
-    panels.forEach((p, i) => {
-      p.from = p.a;
-      p.to = open.includes(i) ? 0 : ALPHA;
-      p.el.setAttribute("aria-current", open.includes(i) ? "true" : "false");
+  // Pliega o despliega la cara visible hacia un estado y un tamaño de hoja.
+  function fold(openIdx, size, dur) {
+    const list = onSide(side), base = side * SIDE;
+    list.forEach((p, k) => { p.from = p.a; p.to = openIdx.includes(base + k) ? 0 : ALPHA; });
+    const pwFrom = pw;
+    return tween(dur, e => {
+      list.forEach(p => { p.a = p.from + (p.to - p.from) * e; });
+      pw = pwFrom + (size - pwFrom) * e;
+      draw();
     });
+  }
+
+  function updateUI() {
+    const open = units[current].idx;
+    panels.forEach((p, i) => p.el.setAttribute("aria-current", open.includes(i) ? "true" : "false"));
     [...dots.children].forEach((d, i) => {
       d.classList.toggle("on", i === current);
       d.setAttribute("aria-current", i === current ? "true" : "false");
     });
-    const ix = units[current].idx.map(n => n + 1);
-    document.getElementById("count").textContent = `${ix.length > 1 ? ix[0] + "–" + ix[1] : ix[0]} / ${pages.length}`;
+    const ix = open.map(n => n + 1);
+    count.textContent = `${ix.length > 1 ? ix[0] + "–" + ix[1] : ix[0]} / ${pages.length}`;
     prev.disabled = current === 0;
     next.disabled = current === units.length - 1;
-    cancelAnimationFrame(raf);
-    raf = 0;
-    pwFrom = pw;
-    clearTimeout(safety);
-    if (animate && !reduced && !document.hidden) {
-      t0 = performance.now();
-      raf = requestAnimationFrame(frame);
-      // si el navegador pausa la animación, la hoja igual termina abierta
-      safety = setTimeout(finish, DURATION + 250);
-    } else finish();
+    const turns = current + 1 < units.length && sideOf(units[current + 1].idx[0]) !== sideOf(open[0]);
+    next.setAttribute("aria-label", turns ? "Dar la vuelta a la tira" : "Página siguiente");
+    try { history.replaceState(null, "", "#" + (open[0] + 1)); } catch (e) { /* file:// no lo permite */ }
   }
-  function finish() {
-    cancelAnimationFrame(raf);
-    raf = 0;
-    panels.forEach(p => { p.a = p.to; });
-    pw = pwTo;
+
+  let nav = 0, flipping = false;
+  async function go(i) {
+    if (flipping) return;                          // mientras se da vuelta, no se interrumpe
+    const target = Math.max(0, Math.min(units.length - 1, i));
+    const from = units[current].idx;
+    current = target;
+    const my = ++nav;
+    updateUI();
+    measure();
+    const open = units[target].idx;
+    if (sideOf(open[0]) === side) {
+      anchor = open;
+      await fold(open, pwTo, DURATION);
+      return;
+    }
+    // Cambio de cara: la tira se cierra sobre el panel del borde (8 en el frente, 9 en el dorso),
+    // ese panel se da vuelta y la otra cara se despliega desde él.
+    flipping = true;
+    const to = sideOf(open[0]);
+    const edgeFrom = side === 0 ? SIDE - 1 : SIDE, edgeTo = to === 0 ? SIDE - 1 : SIDE;
+    const single = sizeFor(1);
+    anchor = [edgeFrom];
+    await fold([edgeFrom], single, 600);
+    const others = l => onSide(l).filter(p => p !== panels[edgeFrom] && p !== panels[edgeTo]);
+    await tween(220, e => others(side).forEach(p => { p.el.style.opacity = 1 - e; }));
+    // dónde queda el panel antes y después de dar la vuelta
+    const at = (s0, edge) => {
+      const keep = side;
+      side = s0; anchor = [edge];
+      onSide(s0).forEach((p, k) => { p.a = s0 * SIDE + k === edge ? 0 : ALPHA; });
+      const L = layout();
+      side = keep;
+      return { x: L.x0 + L.pos[edge - s0 * SIDE].x, top: L.top };
+    };
+    const A = at(side, edgeFrom), B = at(to, edgeTo);
+    const dir = to > side ? 1 : -1;
+    const [fA, fB] = card.children;
+    fA.src = pages[edgeFrom].src;
+    fB.src = pages[edgeTo].src;
+    Object.assign(card.style, { width: pw + "px", height: pw / RATIO + "px", top: A.top + "px" });
+    card.hidden = false;
+    panels[edgeFrom].el.style.opacity = 0;
+    await tween(FLIP, e => {
+      card.style.transform = `translate3d(${(A.x + (B.x - A.x) * e).toFixed(2)}px,0,${(Math.sin(Math.PI * e) * pw * .25).toFixed(1)}px) rotateY(${(-180 * dir * e).toFixed(2)}deg)`;
+    });
+    panels[edgeFrom].el.style.opacity = "";
+    showSide(to);
+    anchor = [edgeTo];
+    onSide(to).forEach((p, k) => { p.a = to * SIDE + k === edgeTo ? 0 : ALPHA; });
+    others(to).forEach(p => { p.el.style.opacity = 0; });
     draw();
+    card.hidden = true;
+    await tween(220, e => others(to).forEach(p => { p.el.style.opacity = e; }));
+    others(to).forEach(p => { p.el.style.opacity = ""; });
+    flipping = false;
+    if (my !== nav) return;
+    anchor = open;
+    await fold(open, pwTo, DURATION);
   }
+  function step(dir) { go(current + dir); }
 
   function measure() {
     const vw = document.documentElement.clientWidth;
@@ -373,30 +479,26 @@
       ALPHA = Math.acos(FOLD);
       buildUnits();
       current = unitOf[page];
-      panels.forEach(p => { p.a = ALPHA; p.from = ALPHA; p.to = ALPHA; });
-      setTargets(false);
+      anchor = units[current].idx;
+      panels.forEach(p => { p.a = ALPHA; });
+      onSide(side).forEach((p, k) => { if (anchor.includes(side * SIDE + k)) p.a = 0; });
+      updateUI();
     }
-    const open = units[current].idx.length;
-    const closed = pages.length - open;
     // alto disponible entre el encabezado y los controles
     const chrome = document.querySelector("header").offsetHeight + document.querySelector("footer").offsetHeight + 56;
     boxH = Math.max(260, window.innerHeight - chrome);
-    // los paneles más cercanos crecen un poco con la perspectiva: se deja margen
-    const hPage = boxH * 0.94;
-    pwTo = mobile
-      ? Math.min(hPage * RATIO, avail * 0.92)
-      : Math.min(hPage * RATIO, (avail * 0.94) / (open + closed * FOLD));
+    pwTo = sizeFor(units[current].idx.length);
     acc.style.setProperty("--stage-h", boxH + "px");
     return true;
   }
-
-  function go(i) {
-    current = Math.max(0, Math.min(units.length - 1, i));
-    measure();
-    setTargets(true);
-    try { history.replaceState(null, "", "#" + (units[current].idx[0] + 1)); } catch (e) { /* file:// no lo permite */ }
+  function sizeFor(open) {
+    const closed = SIDE - open;
+    // los paneles más cercanos crecen un poco con la perspectiva: se deja margen
+    const hPage = boxH * 0.94;
+    return mobile
+      ? Math.min(hPage * RATIO, avail * 0.92)
+      : Math.min(hPage * RATIO, (avail * 0.94) / (open + closed * FOLD));
   }
-  function step(dir) { go(current + dir); }
 
   prev.addEventListener("click", () => step(-1));
   next.addEventListener("click", () => step(1));
@@ -404,16 +506,24 @@
     if (e.key === "ArrowRight") step(1);
     if (e.key === "ArrowLeft") step(-1);
   });
-  addEventListener("resize", () => { if (units.length && measure()) { if (!raf) pw = pwTo; draw(); } });
+  addEventListener("resize", () => {
+    if (!units.length || flipping || !measure()) return;
+    tweenId++; cancelAnimationFrame(raf);
+    const open = units[current].idx;
+    anchor = open;
+    onSide(side).forEach((p, k) => { p.a = open.includes(side * SIDE + k) ? 0 : ALPHA; });
+    pw = pwTo;
+    draw();
+  });
 
   // swipe en móvil
-  let x0 = null;
-  acc.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
+  let tx = null;
+  acc.addEventListener("touchstart", e => { tx = e.touches[0].clientX; }, { passive: true });
   acc.addEventListener("touchend", e => {
-    if (x0 === null) return;
-    const dx = e.changedTouches[0].clientX - x0;
+    if (tx === null) return;
+    const dx = e.changedTouches[0].clientX - tx;
     if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
-    x0 = null;
+    tx = null;
   });
 
   const start = parseInt(location.hash.slice(1), 10);
@@ -422,13 +532,15 @@
     // espera a que el visor le dé tamaño a la página
     if (!measure()) { setTimeout(boot, 100); return; }
     if (start >= 1 && start <= pages.length) current = unitOf[start - 1];
+    showSide(sideOf(units[current].idx[0]));
     measure();
-    // apertura: todo empieza plegado y se despliega una vez
+    updateUI();
+    // apertura: la tira empieza plegada y se despliega una vez
+    anchor = units[current].idx;
     panels.forEach(p => { p.a = ALPHA; });
     pw = pwTo;
     draw();
-    if (reduced) setTargets(false);
-    else setTimeout(() => setTargets(true), 350);
+    setTimeout(() => fold(units[current].idx, pwTo, DURATION), reduced ? 0 : 350);
   }
   boot();
 </script>
