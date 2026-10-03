@@ -310,7 +310,7 @@
       p.el.style.transform = `translate3d(${(x0 + r.x).toFixed(2)}px,0,${(r.z - zOpen).toFixed(2)}px) rotateY(${(r.phi * 180 / Math.PI).toFixed(3)}deg)`;
       // las caras inclinadas hacia un lado reciben menos luz
       const f = p.a / ALPHA;
-      p.shade.style.opacity = ((r.phi > 0 ? .34 : .1) * f).toFixed(3);
+      p.shade.style.opacity = ((r.phi > 0 ? .18 : .05) * f).toFixed(3);
     });
     floor.style.transform = `translateX(${x0 + total * .08}px)`;
     floor.style.width = total * .84 + "px";
