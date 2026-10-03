@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Superilla Barcelona</title>
+<meta name="description" content="Fanzine ilustrado de Jimena Salinas sobre Consell de Cent y la Superilla de Barcelona (2023).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #ece4d3;
+    --paper-deep: #e0d6c0;
+    --ink: #1e1e1c;
+    --green: #97bb80;
+    --green-deep: #2d6a3e;
+    --hand: "Gaegu", "Segoe Print", "Bradley Hand", cursive;
+    --mono: "Space Mono", ui-monospace, Menlo, monospace;
+    --gutter: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #22251f;
+      --paper-deep: #1a1c17;
+      --ink: #ece4d3;
+      --green: #97bb80;
+      --green-deep: #a9cf92;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--hand);
+    display: flex;
+    flex-direction: column;
+    min-height: 100svh;
+    overflow-x: hidden;
+  }
+  header, footer {
+    padding: 18px var(--gutter);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .title {
+    margin: 0;
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: 1.1em;
+    font-family: var(--mono);
+    font-weight: 400;
+    letter-spacing: .38em;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .title span:nth-child(odd) { font-weight: 700; }
+  .by {
+    display: grid;
+    justify-items: end;
+    gap: 2px;
+    font-size: 20px;
+    line-height: 1.2;
+    color: var(--green-deep);
+  }
+  .by small {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink);
+    opacity: .55;
+  }
+
+  main {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--gutter);
+  }
+
+  /* El acordeón: paneles articulados en 3D, plegados en zigzag */
+  .stage {
+    position: relative;
+    width: 100%;
+    perspective: 9000px;
+    perspective-origin: 50% 50%;
+  }
+  .stage { overflow: hidden; padding-block: 24px; }
+  .accordion {
+    position: relative;
+    height: var(--stage-h, 70vh);
+    transform-style: preserve-3d;
+  }
+  .panel {
+    position: absolute;
+    left: 0; top: 0;
+    margin: 0; padding: 0; border: 0;
+    overflow: hidden;
+    cursor: pointer;
+    background: var(--paper-deep);
+    transform-origin: 0 50%;
+    will-change: transform;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .panel img {
+    display: block;
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .shade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: #000;
+    opacity: 0;
+  }
+  .panel::after {
+    /* el doblez: línea de luz y sombra junto a la bisagra */
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(90deg, rgba(0,0,0,.16), rgba(0,0,0,0) 4%, rgba(0,0,0,0) 96%, rgba(0,0,0,.06));
+  }
+  .floor {
+    position: absolute;
+    left: 0;
+    height: 34px;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,.28), rgba(0,0,0,0) 70%);
+    filter: blur(6px);
+    pointer-events: none;
+  }
+  .panel img { transition: filter .25s; }
+  .panel:not([aria-current="true"]):hover img { filter: brightness(1.07); }
+  .panel:focus-visible { outline: 3px solid var(--green-deep); outline-offset: -3px; }
+
+  /* controles */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .arrow {
+    display: grid;
+    place-items: center;
+    padding: 0;
+    background: none;
+    color: var(--green-deep);
+    border: 2px solid var(--green-deep);
+    border-radius: 999px;
+    width: 44px; height: 44px;
+    cursor: pointer;
+    transition: background .2s, color .2s, opacity .2s;
+  }
+  .arrow svg { width: 20px; height: 20px; }
+  .arrow:hover:not(:disabled) { background: var(--green-deep); color: var(--paper); }
+  .arrow:disabled { opacity: .3; cursor: default; }
+  .arrow:focus-visible, .dots button:focus-visible { outline: 2px solid var(--green-deep); outline-offset: 3px; }
+  .dots { display: flex; gap: 8px; }
+  .count { display: none; font-family: var(--mono); font-size: 14px; color: var(--green-deep); min-width: 7ch; text-align: center; }
+  .dots button {
+    width: 10px; height: 10px; padding: 0;
+    border-radius: 50%;
+    border: 2px solid var(--green-deep);
+    background: none;
+    cursor: pointer;
+    transition: background .3s, transform .2s;
+  }
+  .dots button:hover { transform: scale(1.25); }
+  .dots button.on { background: var(--green-deep); }
+  .hint { font-size: 20px; opacity: .7; }
+
+  footer { justify-content: space-between; align-items: center; padding-bottom: 24px; }
+
+  @media (max-width: 600px) {
+    header { padding-top: 14px; }
+    .by { justify-items: start; font-size: 17px; }
+    .hint { display: none; }
+    .dots { display: none; }
+    .count { display: block; }
+    footer { justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 class="title" aria-label="Superilla Barcelona"><span aria-hidden="true">SUP</span><span aria-hidden="true">BAR</span><span aria-hidden="true">ERI</span><span aria-hidden="true">CEL</span><span aria-hidden="true">LLA</span><span aria-hidden="true">ONA</span></h1>
+  <p class="by" style="margin:0">Textos e ilustraciones por Jimena Salinas<small>Consell de Cent · Tarragona y Urgell · 2023</small></p>
+</header>
+
+<main>
+  <div class="stage"><div class="accordion" id="acc" role="list" aria-label="Fanzine Superilla Barcelona"></div></div>
+</main>
+
+<footer>
+  <div class="controls">
+    <button class="arrow" id="prev" aria-label="Página anterior"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="dots" id="dots"></div>
+    <div class="count" id="count" aria-live="polite"></div>
+    <button class="arrow" id="next" aria-label="Página siguiente"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  </div>
+  <div class="hint">toca una hoja o usa las flechas para desplegarla</div>
+</footer>
+
+<script>
+  const pages = [
+    { src: "img/p1.jpg", alt: "Portada: dos niñas corriendo dentro de un círculo de luz sobre fondo verde. Título: Superilla Barcelona." },
+    { src: "img/p2.jpg", alt: "Una paloma caminando. Textos e ilustraciones por Jimena Salinas. Las imágenes y conversaciones corresponden a la altura de Tarragona y Urgell de Carrer Consell de Cent (2023).", spread: "a" },
+    { src: "img/p3.jpg", alt: "Una persona haciendo una voltereta lateral sobre fondo crema.", spread: "a" },
+    { src: "img/p4.jpg", alt: "Una planta baja de fachada amarilla con puertas verdes, un árbol y bicicletas aparcadas.", spread: "b" },
+    { src: "img/p5.jpg", alt: "Un hombre en bicicleta. Texto: «Migré a Barcelona en setiembre 2022. Nuestro primer (y hasta ahora único) piso quedaba en Consell de Cent, en una planta baja. Antes era una lavandería y luego un bar. La dueña dice que de niña vivió ahí.»", spread: "b" },
+    { src: "img/p6.jpg", alt: "Una mini excavadora amarilla con un obrero de chaleco verde avanza sobre un montón de tierra, entre vallas y un cono naranja, frente a edificios amarillos. Texto: «En ese entonces, me sentía dividida entre dos realidades. Lima, que se despertaba seis horas después de mí… Y Barcelona que me recibía con obras y ruido.»", spread: "c" },
+    { src: "img/p7.jpg", alt: "Un auto pequeño dibujado a lápiz, cortado por el borde derecho. Texto: «Las remodelaciones comenzaron la semana después de ingresar al piso. La Superilla de Consell de Cent era una visión de una ciudad más verde, inclusiva y peatonal. Sabíamos que tardaría hasta ver el resultado final.»", spread: "c" },
+    { src: "img/p8.jpg", alt: "Una plaza con árboles frondosos, bancos de madera y papeleras. Una pareja camina de espaldas, una mujer mayor con un carrito y un hombre descansan en los bancos.", spread: "d" },
+    { src: "img/p9.jpg", alt: "Una niña camina en equilibrio sobre troncos cortados. Texto: «Cuando conocí sobre el proyecto de la Superilla sentí que era cómo la naturaleza intentaba resistirse al concreto de la ciudad. Su aspecto rústico, los árboles sinuosos, algunos pequeños, otros más grandes, la mobiliaria de madera.»", spread: "d" },
+    { src: "img/p10.jpg", alt: "Macetas pequeñas con plantas y un árbol joven atado a tutores. Texto: «Los árboles los trajeron en diminutas macetas. “Vi cómo venían a robárselas antes de haberlas instalado”, me dijo una señora con quien pude conversar.»", spread: "e" },
+    { src: "img/p11.jpg", alt: "Unos pies con pantalón verde y zapatos marrones caminan sobre losetas hexagonales con la flor de Barcelona. Texto: «También las locetas dieron mucho de qué hablar. “Yo tengo una loceta antigua en mi sala. Me la llevé durante la remodelación. Es como un trofeo.”»", spread: "e" },
+    { src: "img/p12.jpg", alt: "Recorte de periódico dibujado. Quejas vecinales: «Clamor de vecinos y tiendas de Consell de Cent por la sentencia contra la Superilla: “No más obras”». Un hombre sentado en un banco y dos personas con un perro caminan por la calle arbolada.", spread: "f" },
+    { src: "img/p13.jpg", alt: "Un hombre lee un periódico. Texto: «Hace poco salió una noticia que quieren derribar el proyecto de la Superilla. En un par de años, tras ruido, obras y presupuesto, algunos quieren que vuelva a ser la avenida con vehículos que era.»", spread: "f" },
+    { src: "img/p14.jpg", alt: "Dos personas sentadas en bancos de madera entre árboles jóvenes. Texto: «Camino un rato por Consell de Cent y veo…»", spread: "g" },
+    { src: "img/p15.jpg", alt: "Un galgo con arnés y dos palomas sobre un suelo de adoquines. Texto: «Somos naturaleza defendiéndose.»", spread: "g" },
+    { src: "img/p16.jpg", alt: "Contraportada: una paloma en pleno vuelo dentro de un círculo de luz sobre fondo verde." },
+  ];
+  const RATIO = 1414 / 2000;
+  const FOLD_DESKTOP = 0.1, FOLD_MOBILE = 0.2;
+  let FOLD = FOLD_DESKTOP, ALPHA = Math.acos(FOLD);
+                 // ancho de un panel plegado respecto a uno abierto (cos del ángulo)
+  const DURATION = 750;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // En pantalla ancha cada doble página se abre junta; la portada y la contraportada van solas.
+  // En móvil se abre una página a la vez, para que se pueda leer.
+  let units = [], unitOf = [], mobile = false;
+  function buildUnits() {
+    units = [];
+    pages.forEach((p, i) => {
+      const last = units[units.length - 1];
+      if (!mobile && p.spread && last && last.spread === p.spread) last.idx.push(i);
+      else units.push({ spread: p.spread, idx: [i] });
+    });
+    unitOf = pages.map((_, i) => units.findIndex(u => u.idx.includes(i)));
+    dots.innerHTML = "";
+    units.forEach((u, i) => {
+      const d = document.createElement("button");
+      const ix = u.idx.map(n => n + 1);
+      d.setAttribute("aria-label", `Ir a ${ix.length > 1 ? "páginas " + ix.join(" y ") : "página " + ix[0]}`);
+      d.addEventListener("click", () => go(i));
+      dots.appendChild(d);
+    });
+    }
+
+  const acc = document.getElementById("acc");
+  const dots = document.getElementById("dots");
+  const prev = document.getElementById("prev");
+  const next = document.getElementById("next");
+  let current = 0;
+
+  const panels = pages.map((p, i) => {
+    const el = document.createElement("button");
+    el.className = "panel";
+    el.setAttribute("role", "listitem");
+    el.setAttribute("aria-label", `Página ${i + 1} de ${pages.length}`);
+    el.innerHTML = `<img src="${p.src}" alt="${p.alt}" draggable="false" decoding="async"><span class="shade"></span>`;
+    el.addEventListener("click", () => go(unitOf[i]));
+    acc.appendChild(el);
+    return { el, shade: el.lastElementChild, a: ALPHA, from: ALPHA, to: ALPHA };
+  });
+  const floor = document.createElement("div");
+  floor.className = "floor";
+  acc.appendChild(floor);
+
+  let safety = 0;
+  let pw = 300, pwFrom = 300, pwTo = 300, boxH = 400, avail = 600, raf = 0, t0 = 0;
+  const ease = t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+  // Posiciona cada panel: giro alrededor de su bisagra izquierda, zigzag alternado.
+  function draw() {
+    const open = units[current].idx;
+    let x = 0, z = 0, zOpen = 0;
+    const pos = panels.map((p, i) => {
+      const phi = (i % 2 === 0 ? 1 : -1) * p.a;
+      const r = { x, z, phi };
+      if (i === open[0]) zOpen = z;
+      x += pw * Math.cos(phi);
+      z -= pw * Math.sin(phi);
+      return r;
+    });
+    const total = x;
+    const x0 = mobile
+      ? avail / 2 - (pos[open[0]].x + (pw * open.length) / 2)   // centrada en la página abierta; el resto se sale
+      : (avail - total) / 2;
+    // la hoja siempre centrada en una caja de alto fijo: los controles no se mueven
+    const ph = pw / RATIO, top = (boxH - ph) / 2;
+    panels.forEach((p, i) => {
+      const r = pos[i];
+      p.el.style.width = pw + "px";
+      p.el.style.height = ph + "px";
+      p.el.style.top = top + "px";
+      p.el.style.transform = `translate3d(${(x0 + r.x).toFixed(2)}px,0,${(r.z - zOpen).toFixed(2)}px) rotateY(${(r.phi * 180 / Math.PI).toFixed(3)}deg)`;
+      // las caras inclinadas hacia un lado reciben menos luz
+      const f = p.a / ALPHA;
+      p.shade.style.opacity = ((r.phi > 0 ? .34 : .1) * f).toFixed(3);
+    });
+    floor.style.transform = `translateX(${x0 + total * .03}px)`;
+    floor.style.width = total * .94 + "px";
+    floor.style.top = top + ph - 10 + "px";
+  }
+
+  function frame() {
+    const t = Math.max(0, Math.min(1, (performance.now() - t0) / DURATION));
+    const e = ease(t);
+    panels.forEach(p => { p.a = p.from + (p.to - p.from) * e; });
+    pw = pwFrom + (pwTo - pwFrom) * e;   // el tamaño de la hoja también cambia suave
+    draw();
+    if (t < 1) raf = requestAnimationFrame(frame);
+    else { clearTimeout(safety); finish(); }
+  }
+
+  function setTargets(animate) {
+    const open = units[current].idx;
+    panels.forEach((p, i) => {
+      p.from = p.a;
+      p.to = open.includes(i) ? 0 : ALPHA;
+      p.el.setAttribute("aria-current", open.includes(i) ? "true" : "false");
+    });
+    [...dots.children].forEach((d, i) => {
+      d.classList.toggle("on", i === current);
+      d.setAttribute("aria-current", i === current ? "true" : "false");
+    });
+    const ix = units[current].idx.map(n => n + 1);
+    document.getElementById("count").textContent = `${ix.length > 1 ? ix[0] + "–" + ix[1] : ix[0]} / ${pages.length}`;
+    prev.disabled = current === 0;
+    next.disabled = current === units.length - 1;
+    cancelAnimationFrame(raf);
+    raf = 0;
+    pwFrom = pw;
+    clearTimeout(safety);
+    if (animate && !reduced && !document.hidden) {
+      t0 = performance.now();
+      raf = requestAnimationFrame(frame);
+      // si el navegador pausa la animación, la hoja igual termina abierta
+      safety = setTimeout(finish, DURATION + 250);
+    } else finish();
+  }
+  function finish() {
+    cancelAnimationFrame(raf);
+    raf = 0;
+    panels.forEach(p => { p.a = p.to; });
+    pw = pwTo;
+    draw();
+  }
+
+  function measure() {
+    const vw = document.documentElement.clientWidth;
+    if (vw < 120 || window.innerHeight < 160) return false;   // el visor aún no le dio tamaño a la página
+    const wasMobile = mobile;
+    avail = vw - 32;
+    mobile = avail < 640;
+    if (mobile !== wasMobile || !units.length) {
+      const page = units.length ? units[current].idx[0] : 0;
+      FOLD = mobile ? FOLD_MOBILE : FOLD_DESKTOP;
+      ALPHA = Math.acos(FOLD);
+      buildUnits();
+      current = unitOf[page];
+      panels.forEach(p => { p.a = ALPHA; p.from = ALPHA; p.to = ALPHA; });
+      setTargets(false);
+    }
+    const open = units[current].idx.length;
+    const closed = pages.length - open;
+    // alto disponible entre el encabezado y los controles
+    const chrome = document.querySelector("header").offsetHeight + document.querySelector("footer").offsetHeight + 56;
+    boxH = Math.max(260, window.innerHeight - chrome);
+    // los paneles más cercanos crecen un poco con la perspectiva: se deja margen
+    const hPage = boxH * 0.94;
+    pwTo = mobile
+      ? Math.min(hPage * RATIO, avail * 0.92)
+      : Math.min(hPage * RATIO, (avail * 0.94) / (open + closed * FOLD));
+    acc.style.setProperty("--stage-h", boxH + "px");
+    return true;
+  }
+
+  function go(i) {
+    current = Math.max(0, Math.min(units.length - 1, i));
+    measure();
+    setTargets(true);
+    try { history.replaceState(null, "", "#" + (units[current].idx[0] + 1)); } catch (e) { /* file:// no lo permite */ }
+  }
+  function step(dir) { go(current + dir); }
+
+  prev.addEventListener("click", () => step(-1));
+  next.addEventListener("click", () => step(1));
+  addEventListener("keydown", e => {
+    if (e.key === "ArrowRight") step(1);
+    if (e.key === "ArrowLeft") step(-1);
+  });
+  addEventListener("resize", () => { if (units.length && measure()) { if (!raf) pw = pwTo; draw(); } });
+
+  // swipe en móvil
+  let x0 = null;
+  acc.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
+  acc.addEventListener("touchend", e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
+    x0 = null;
+  });
+
+  const start = parseInt(location.hash.slice(1), 10);
+  mobile = null;
+  function boot() {
+    // espera a que el visor le dé tamaño a la página
+    if (!measure()) { setTimeout(boot, 100); return; }
+    if (start >= 1 && start <= pages.length) current = unitOf[start - 1];
+    measure();
+    // apertura: todo empieza plegado y se despliega una vez
+    panels.forEach(p => { p.a = ALPHA; });
+    pw = pwTo;
+    draw();
+    if (reduced) setTargets(false);
+    else setTimeout(() => setTargets(true), 350);
+  }
+  boot();
+</script>
+</body>
+</html>
