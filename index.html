@@ -55,9 +55,7 @@
   }
   .title {
     margin: 0;
-    display: grid;
-    grid-template-columns: auto auto;
-    column-gap: 1.1em;
+    display: block;
     font-family: var(--mono);
     font-weight: 400;
     letter-spacing: .38em;
@@ -65,6 +63,27 @@
     line-height: 1.45;
   }
   .title span:nth-child(odd) { font-weight: 700; }
+  /* el título es un botón: lleva a la portada desde cualquier página */
+  .home {
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: 1.1em;
+    padding: 6px 8px;
+    margin: -6px -8px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    line-height: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: color .2s, background .2s;
+  }
+  .home:hover { color: var(--green-deep); background: color-mix(in srgb, var(--green) 22%, transparent); }
+  .home:active { background: color-mix(in srgb, var(--green) 38%, transparent); }
+  .home:focus-visible { outline: 2px solid var(--green-deep); outline-offset: 2px; }
   .by {
     display: grid;
     justify-items: end;
@@ -247,7 +266,7 @@
 <body>
 
 <header>
-  <h1 class="title" aria-label="Superilla Barcelona"><span aria-hidden="true">SUP</span><span aria-hidden="true">BAR</span><span aria-hidden="true">ERI</span><span aria-hidden="true">CEL</span><span aria-hidden="true">LLA</span><span aria-hidden="true">ONA</span></h1>
+  <h1 class="title"><button type="button" class="home" id="home" aria-label="Superilla Barcelona, volver a la portada" title="Volver a la portada"><span aria-hidden="true">SUP</span><span aria-hidden="true">BAR</span><span aria-hidden="true">ERI</span><span aria-hidden="true">CEL</span><span aria-hidden="true">LLA</span><span aria-hidden="true">ONA</span></button></h1>
   <p class="by" style="margin:0">Textos e ilustraciones por Jimena Salinas<small>Consell de Cent · Tarragona y Urgell · 2023</small></p>
 </header>
 
@@ -300,6 +319,7 @@
   const count = document.getElementById("count");
   const restart = document.getElementById("restart");
   restart.addEventListener("click", () => go(0));
+  document.getElementById("home").addEventListener("click", () => go(0));
   const svg = d => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   const ICON_NEXT = svg("M5 12h14M13 6l6 6-6 6");
   const ICON_PREV = svg("M19 12H5M11 6l-6 6 6 6");
