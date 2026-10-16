@@ -24,6 +24,7 @@ npm install playwright-core      # una vez
 npx playwright install chromium  # una vez
 node reel/grabar.js              # versión completa → reel/superilla-reel.mp4
 node reel/grabar.js corto        # versión de ~30 s → reel/superilla-reel-30s.mp4
+node reel/grabar.js gancho       # versión con titular desde el primer cuadro → reel/superilla-reel-gancho.mp4
 ```
 
 Los tiempos de cada página están en `DWELL`, dentro de `reel/index.html`.

@@ -8,12 +8,13 @@ const { spawn } = require('child_process');
  await p.clock.install({time:0});
  // node reel/grabar.js        → versión completa
  // node reel/grabar.js corto  → versión de ~30 s
- const SHORT = process.argv[2] === 'corto';
- await p.goto('http://localhost:8000/reel/' + (SHORT ? '?corto' : ''));
+ const MODE = process.argv[2] || '';
+ const SHORT = MODE === 'corto' || MODE === 'gancho';
+ await p.goto('http://localhost:8000/reel/' + (MODE ? '?' + MODE : ''));
  await p.waitForFunction(()=>window.__ready && [...document.images].every(i=>i.complete) && document.fonts.status==='loaded');
  await p.clock.pauseAt(10000);
  const ff = spawn('ffmpeg', ['-y','-loglevel','error','-f','image2pipe','-framerate',String(FPS),'-c:v','mjpeg','-i','-',
-   '-c:v','libx264','-preset','slow','-crf','18','-pix_fmt','yuv420p','-r',String(FPS),'-movflags','+faststart',SHORT ? 'reel/superilla-reel-30s.mp4' : 'reel/superilla-reel.mp4']);
+   '-c:v','libx264','-preset','slow','-crf','18','-pix_fmt','yuv420p','-r',String(FPS),'-movflags','+faststart',MODE === 'gancho' ? 'reel/superilla-reel-gancho.mp4' : SHORT ? 'reel/superilla-reel-30s.mp4' : 'reel/superilla-reel.mp4']);
  ff.stderr.on('data', d => process.stderr.write(d));
  await p.evaluate(()=>{ window.__runReel(); });
  let f = 0, t = 0, extra = 0;

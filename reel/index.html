@@ -228,7 +228,13 @@
   .overlay p { margin: 0; font-size: 26px; line-height: 1.3; color: var(--green-deep); }
   .overlay small { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .6; }
   .overlay .url { white-space: nowrap; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0; color: var(--ink); opacity: .85; }
+  /* variante ?gancho: titular desde el primer cuadro y portada ya abierta */
+  .hook { position: fixed; z-index: 6; top: 112px; left: 32px; right: 32px; font: 700 34px/1.04 var(--hand); color: var(--ink); opacity: 0; pointer-events: none; }
+  .hook em { display: block; font-style: normal; color: var(--green-deep); }
+  .gancho .hook { opacity: 1; }
+  .gancho header { opacity: 0; }
 </style>
+<script>if (location.search.includes("gancho")) document.documentElement.classList.add("gancho");</script>
 </head>
 <body>
 
@@ -531,7 +537,7 @@
     // los paneles más cercanos crecen un poco con la perspectiva: se deja margen
     const hPage = boxH * 0.94;
     return mobile
-      ? Math.min(hPage * RATIO, avail * 0.8)
+      ? Math.min(hPage * RATIO, avail * (location.search.includes('gancho') ? 0.9 : 0.8))
       : Math.min(hPage * RATIO, (avail * 0.94) / (open + 2 * closed * FOLD));   // cabe aunque todo lo plegado quede de un lado
   }
 
@@ -579,6 +585,7 @@
   }
   boot();
 </script>
+<div class="hook" id="hook">Dibujé mi calle<em>mientras la reconstruían</em></div>
 <div class="overlay" id="intro">
   <div class="big" aria-hidden="true"><span>SUP</span><span>BAR</span><span>ERI</span><span>CEL</span><span>LLA</span><span>ONA</span></div>
   <p>un fanzine de Jimena Salinas</p>
@@ -595,12 +602,32 @@
   const SHORT = new URLSearchParams(location.search).has("corto");
   const LONG = [[1,2600],[2,3200],[3,2200],[4,2200],[5,3600],[6,3600],[7,3400],[8,2400],[9,5600],[10,3200],[11,3400],[12,3200],[13,3400],[14,2600],[15,2800],[16,2400]];
   const CUT = [[1,2300],[4,1800],[5,2800],[6,2600],[8,1800],[9,4100],[11,2600],[12,2600],[15,2400],[16,1800]];
-  const STEPS = SHORT ? CUT : LONG;
+  const GANCHO = new URLSearchParams(location.search).has("gancho");
+  const HOOK = [[1,2600],[4,1500],[5,2600],[6,2400],[8,1500],[9,3600],[11,2300],[12,2300],[15,2000],[16,1500]];
+  
+  const STEPS = GANCHO ? HOOK : SHORT ? CUT : LONG;
   const fade = (el, from, to, dur) => tween(dur, e => { el.style.opacity = from + (to - from) * e; });
   window.__runReel = async () => {
     const wait = ms => new Promise(r => setTimeout(r, ms));
     const intro = document.getElementById("intro"), outro = document.getElementById("outro");
-    if (SHORT) {
+    if (GANCHO) {
+      // el primer cuadro ya muestra la portada abierta y el titular
+      intro.remove();
+      const o = units[current].idx;
+      panels.forEach((p, i) => { p.a = o.includes(i) ? 0 : ALPHA; });
+      pw = pwTo; draw();
+      // el titular da paso al título del fanzine (con transiciones de CSS: no compiten con la animación de las hojas)
+      setTimeout(() => {
+        const hook = document.getElementById("hook"), head = document.querySelector("header"), t0 = performance.now();
+        const f = () => {
+          const t = Math.min(1, (performance.now() - t0) / 500);
+          hook.style.opacity = 1 - t; head.style.opacity = t;
+          if (t < 1) requestAnimationFrame(f);
+          else { document.documentElement.classList.remove("gancho"); hook.style.opacity = ""; head.style.opacity = ""; }
+        };
+        requestAnimationFrame(f);
+      }, 2200);
+    } else if (SHORT) {
       // versión corta: arranca en movimiento (el título queda para el cierre)
       intro.remove();
       await wait(150);
@@ -609,8 +636,8 @@
       await fade(intro, 1, 0, 500);
       intro.remove();
     }
-    const unfold = SHORT ? 1100 : 900;
-    await fold(units[current].idx, pwTo, unfold);
+    const unfold = GANCHO ? 0 : SHORT ? 1100 : 900;
+    if (!GANCHO) await fold(units[current].idx, pwTo, unfold);
     for (let k = 0; k < STEPS.length; k++) {
       await wait(STEPS[k][1] - (k === 0 ? unfold : 0));
       if (k < STEPS.length - 1) go(unitOf[STEPS[k + 1][0] - 1]);
